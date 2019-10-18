@@ -30,23 +30,6 @@ class ContinuedFraction {
 			return continuation != NULL;
 		}
 
-        //TODO: cache these
-		const uint numerator() const {
-			if (hasContinuation()) {
-				return front * continuation->numerator() + continuation->denominator();
-			} else {
-				return front;
-			}
-		}
-
-		const uint denominator() const {
-			if (hasContinuation()) {
-				return continuation->numerator();
-			} else {
-				return 1;
-			}
-		}
-
 		operator string() const {
 			stringstream ss;
 			ss << numerator() << "/" << denominator();
@@ -57,6 +40,15 @@ class ContinuedFraction {
 			if (hasContinuation()) {
 				delete continuation;
 			}
+		}
+
+        //TODO: cache these values
+		const uint numerator() const {
+            return hasContinuation() ? front * continuation->numerator() + continuation->denominator() :  front;
+		}
+
+		const uint denominator() const {
+			return hasContinuation() ?  continuation->numerator() : 1;
 		}
 
 	private:
