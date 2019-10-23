@@ -4,6 +4,7 @@
 #include <sstream>
 #include <set>
 #include <stack>
+#include <cstdlib>
 
 using namespace std;
 
@@ -73,18 +74,6 @@ void populateWithPrimes(set<uint>& o_primes) {
     }
 }
 
-void populateWithPrimeProducts(const set<uint>& primes, set<uint>& o_primeProducts) {
-    uint totalProduct = 1;
-    for (uint prime : primes) {
-        totalProduct *= prime;
-        o_primeProducts.insert(totalProduct);
-
-        if (totalProduct > maxInput) {
-            return;
-        }
-    }
-}
-
 void factorNaive(const uint num, const set<uint>& primes, list<uint>& o_factors) {
     if (num == 1) {
         return;
@@ -99,12 +88,21 @@ void factorNaive(const uint num, const set<uint>& primes, list<uint>& o_factors)
     }
 }
 
-template<typename T>
-T nextBiggestElement(const set<T> items, const T item) {
-    return *items.lower_bound(item);
+const uint factorCandidate(const uint num, const set<uint>& primes) {
+    uint product = 1;
+    for (uint prime : primes) {
+        if (rand() % prime == 0) {
+            product *= prime;
+            if (product > num * num * num) {
+                return product;
+            }
+        }
+    }
+
+    return 0;
 }
 
-void factorCF(const uint num, const set<uint>& primes, const set<uint>& primeProducts, list<uint>& o_factors) {
+void factorCF(const uint num, const set<uint>& primes, list<uint>& o_factors) {
     if (num == 1) {
         return;
     }
@@ -116,8 +114,10 @@ void factorCF(const uint num, const set<uint>& primes, const set<uint>& primePro
 
     stack<uint> quotients;
 
-    uint top = num;
-    uint bottom = nextBiggestElement(primeProducts, num);
+    const uint primeProduct = factorCandidate(num, primes);
+
+    uint top = primeProduct;
+    uint bottom = num;
     while (bottom > 0) {
         quotients.push(top / bottom);
         uint rem = top % bottom;
@@ -133,8 +133,9 @@ void factorCF(const uint num, const set<uint>& primes, const set<uint>& primePro
         quotients.pop();
     }
 
-    factorCF(outerFraction->numerator(), primes, primeProducts, o_factors);
-    factorCF(num / outerFraction->numerator(), primes, primeProducts, o_factors);
+    factorCF(outerFraction->denominator(), primes, o_factors);
+    factorCF(num / outerFraction->denominator(), primes, o_factors);
+
 
     delete outerFraction;
 }
@@ -145,14 +146,15 @@ int main() {
 	populateWithPrimes(primes);
     cout << "Generated primes!" << endl;
 
-    cout << "Generating prime products..." << endl;
-    set<uint> primeProducts;
-    populateWithPrimeProducts(primes, primeProducts);
-    cout << "Generated prime products! Let's roll!" << endl;
+    while (true) {
+        cout << "Enter a number to factor: ";
+        uint toFactor;
+        cin >> toFactor;
 
-	list<uint> factors;
-	factorCF(3392, primes, primeProducts, factors);
-	print(factors);
+        list<uint> factors;
+        factorCF(toFactor, primes, factors);
+        print(factors);
+    }
 
 	return 0;
 }
