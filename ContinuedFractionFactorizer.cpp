@@ -5,10 +5,13 @@
 #include <set>
 #include <stack>
 #include <cstdlib>
+#include <cmath>
+#include <fstream>
+#include <gmpxx.h>
 
 using namespace std;
 
-typedef unsigned long long int uint;
+typedef mpz_class uint;
 
 const uint maxInput = 10000;
 
@@ -63,15 +66,13 @@ bool setContains(const set<T> s, const T val) {
 }
 
 void populateWithPrimes(set<uint>& o_primes) {
-    set<uint> composites;
-    for (uint primeCandidate = 2; primeCandidate < maxInput; primeCandidate++) {
-        if (!setContains(composites, primeCandidate)) {
-            o_primes.insert(primeCandidate);
-            for (uint composite = primeCandidate * 2; composite < maxInput; composite += primeCandidate) {
-                composites.insert(composite);
-            }
-        }
+    ifstream primeReader("primes.txt");
+    while (!primeReader.eof()) {
+        uint num;
+        primeReader >> num;
+        o_primes.insert(num);
     }
+    primeReader.close();
 }
 
 void factorNaive(const uint num, const set<uint>& primes, list<uint>& o_factors) {
@@ -88,21 +89,19 @@ void factorNaive(const uint num, const set<uint>& primes, list<uint>& o_factors)
     }
 }
 
-const uint factorCandidate(const uint num, const set<uint>& primes) {
+const uint factorCandidate(const uint num, const set<uint>& primes, const bool skip = false, const int skip_prob = 1) {
     uint product = 1;
-    for (uint prime : primes) {
-        if (rand() % prime == 0) {
-            product *= prime;
-            if (product > num * num * num) {
-                return product;
-            }
+
+    for (set<uint>::iterator it = primes.begin(); it != primes.end() && *it < num; ++it) {
+        if (!skip || rand() % skip_prob == 0) {
+            product *= *it;
         }
     }
 
-    return 0;
+    return product;
 }
 
-void factorCF(const uint num, const set<uint>& primes, list<uint>& o_factors) {
+void factorCF(const uint num, const set<uint>& primes, list<uint>& o_factors, const bool skip = false, const int skip_prob = 1) {
     if (num == 1) {
         return;
     }
@@ -114,7 +113,7 @@ void factorCF(const uint num, const set<uint>& primes, list<uint>& o_factors) {
 
     stack<uint> quotients;
 
-    const uint primeProduct = factorCandidate(num, primes);
+    const uint primeProduct = factorCandidate(num, primes, skip, skip_prob);
 
     uint top = primeProduct;
     uint bottom = num;
@@ -133,11 +132,17 @@ void factorCF(const uint num, const set<uint>& primes, list<uint>& o_factors) {
         quotients.pop();
     }
 
-    factorCF(outerFraction->denominator(), primes, o_factors);
-    factorCF(num / outerFraction->denominator(), primes, o_factors);
-
+    uint quotient = outerFraction->denominator();
+    uint divisor = num / quotient;
 
     delete outerFraction;
+
+    if (quotient == 1) {
+        factorCF(divisor, primes, o_factors, true, skip_prob + 1);
+    } else {
+        factorCF(quotient, primes, o_factors, false);
+        factorCF(divisor, primes, o_factors, false);
+    }
 }
 
 int main() {
